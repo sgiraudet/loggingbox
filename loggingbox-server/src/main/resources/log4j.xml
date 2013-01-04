@@ -28,9 +28,13 @@
     <category name="org.hibernate">
         <priority value="WARN" />
     </category>
+    
+    <category name="org.eclipse.jetty">
+        <priority value="INFO" />
+    </category>
 	<root>
 		<priority value="TRACE" />
 		<appender-ref ref="console" />
-		<appender-ref ref="loggingBox" />
+ 		<appender-ref ref="loggingBox" /> 
 	</root>
 </log4j:configuration>

@@ -1,4 +1,4 @@
-package com.log.servlet;
+package com.loggingbox.servlet;
 
 import java.io.IOException;
 import java.util.Date;

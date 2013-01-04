@@ -1,4 +1,4 @@
-package com.log.servlet;
+package com.loggingbox.servlet;
 //package com.log.servlet;
 //
 //import java.io.IOException;

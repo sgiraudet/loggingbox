@@ -1,4 +1,4 @@
-package com.log.service;
+package com.loggingbox.service;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,9 +15,9 @@ import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.log.harvester.SystemHarvester;
-import com.log.servlet.LogGetServlet;
-import com.log.servlet.LogInsertServlet;
-import com.log.servlet.LogsInsertServlet;
+import com.loggingbox.servlet.LogGetServlet;
+import com.loggingbox.servlet.LogInsertServlet;
+import com.loggingbox.servlet.LogsInsertServlet;
 
 /**
  * Manages the construction and initialisation of server side components.
@@ -37,7 +37,7 @@ public final class ServiceConstructor implements ServletContextListener {
 			.getLogger(ServiceConstructor.class);
 
 	public ServiceConstructor() {
-		super();
+		
 	}
 
 	@Override

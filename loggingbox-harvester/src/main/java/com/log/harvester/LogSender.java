@@ -3,15 +3,14 @@ package com.log.harvester;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -62,6 +61,7 @@ public class LogSender extends Thread {
 		log.level = level;
 		log.data = logMessage;
 		log.type = type;
+		log.applicationId = applicationId;
 		if (host == null) {
 			log.host = this.host;
 		} else {
@@ -121,12 +121,7 @@ public class LogSender extends Thread {
 		}
 		try {
 
-			String parameters = "logs="
-					+ URLEncoder.encode(
-							objectMapper.writeValueAsString(readingQueue),
-							"utf8");
-			parameters += "&applicationId="
-					+ URLEncoder.encode(applicationId, "utf8");
+			String parameters = objectMapper.writeValueAsString(readingQueue);
 
 			URL url = new URL(String.format(
 					"http://%s:%s/api/log/insert_batch", loggingBoxHost,
@@ -137,17 +132,18 @@ public class LogSender extends Thread {
 			connection.setDoInput(true);
 			connection.setRequestMethod("POST");
 			connection.setRequestProperty("charset", "utf-8");
+			connection.setRequestProperty("Content-Encoding", "gzip");
 			connection.setUseCaches(false);
 
-			OutputStreamWriter writer = new OutputStreamWriter(
-					connection.getOutputStream());
-
-			writer.write(parameters);
-			writer.flush();
+			byte b[] = parameters.getBytes("UTF-8");
+			GZIPOutputStream gz = new GZIPOutputStream(
+					connection.getOutputStream(), b.length);
+			gz.write(b, 0, b.length);
+			gz.flush();
+			gz.close();
 
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					connection.getInputStream()));
-			writer.close();
 			reader.close();
 			errorNumber = 0;
 		} catch (MalformedURLException e) {
@@ -189,6 +185,7 @@ public class LogSender extends Thread {
 
 	public final class Log {
 
+		private String applicationId;
 		private String level;
 		private Date date;
 		private String host;
@@ -198,6 +195,10 @@ public class LogSender extends Thread {
 		/***********************
 		 ******* GETTERS *******
 		 **********************/
+
+		public String getApplicationId() {
+			return applicationId;
+		}
 
 		public Date getDate() {
 			return date;
@@ -241,6 +242,10 @@ public class LogSender extends Thread {
 
 		public void setHost(String host) {
 			this.host = host;
+		}
+
+		public void setApplicationId(String applicationId) {
+			this.applicationId = applicationId;
 		}
 
 	}

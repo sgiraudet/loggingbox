@@ -1,4 +1,4 @@
-package com.log.service;
+package com.loggingbox.service;
 
 import java.util.Properties;
 
