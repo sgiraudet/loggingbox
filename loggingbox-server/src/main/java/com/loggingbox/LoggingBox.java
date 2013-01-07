@@ -3,7 +3,10 @@ package com.loggingbox;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.URL;
 
@@ -30,19 +33,30 @@ import com.loggingbox.servlet.LogsInsertServlet;
 
 public class LoggingBox {
 
-	private final static String DEFAULT_PROPERTIES_FILE = "loggingbox.properties";
-
-	private static final Logger LOGGER = Logger.getLogger(LoggingBox.class);
-
+	private final static String DEFAULT_PROPERTIES_FILE = "default.properties";
+	private final static String SPECIFIC_PROPERTIES_FILE = "loggingbox.properties";
+	
+	
 	public static void main(String[] args) throws Exception {
-
+		
+		String homePath = "";
+		if(args != null && args.length > 0) {
+			homePath = args[0];
+			
+			System.setProperty("loggingbox.home", homePath); 
+			PrintStream out = new PrintStream(new FileOutputStream(homePath+"/logs/loggingbox.out", true));
+			System.setOut(out);
+			System.setErr(out);
+		}
+		Logger LOGGER = Logger.getLogger(LoggingBox.class);
+		
 		ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
 		Server server = new Server(8080);
 
 		ResourceHandler resource_handler = new ResourceHandler();
 		resource_handler.setDirectoriesListed(true);
 		resource_handler.setWelcomeFiles(new String[] { "index.html" });
-		resource_handler.setResourceBase("war");
+		resource_handler.setResourceBase(homePath+"/war");
 
 		ServletContextHandler servletContext = new ServletContextHandler();
 		servletContext.setContextPath("/api");
@@ -68,17 +82,19 @@ public class LoggingBox {
 		WebApplicationContext context = ContextLoaderListener
 				.getCurrentWebApplicationContext();
 
+	
 		ServerProperties serverProperties = context
 				.getBean(ServerProperties.class);
-		URL url = LoggingBox.class.getClassLoader().getResource(
+		
+		
+		//load the default config file
+		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(
 				DEFAULT_PROPERTIES_FILE);
-		if (url != null) {
+		if (is != null) {
 			LOGGER.info(String.format("Found default file conf {%s}",
-					url.toString()));
+					DEFAULT_PROPERTIES_FILE));
 			try {
-				serverProperties.load(new FileInputStream(new File(url
-						.getFile())));
-				LOGGER.info(url.getFile() + " has been loaded. ");
+				serverProperties.load(is);
 			} catch (FileNotFoundException e) {
 				LOGGER.error(String.format(
 						"Failed to load default configuration file {%s}",
@@ -89,9 +105,51 @@ public class LoggingBox {
 						DEFAULT_PROPERTIES_FILE), e);
 			}
 		} else {
-			LOGGER.error(DEFAULT_PROPERTIES_FILE
-					+ " file has not been found in your classpath. ");
+			URL url =	Thread.currentThread().getContextClassLoader().getResource(
+					DEFAULT_PROPERTIES_FILE);
+			if (url != null) {
+				LOGGER.info(String.format("Found default file conf {%s}",
+						url.toString()));
+				try {
+					serverProperties.load(new FileInputStream(new File(url
+							.getFile())));
+					LOGGER.info(url.getFile() + " has been loaded. ");
+				} catch (FileNotFoundException e) {
+					LOGGER.error(String.format(
+							"Failed to load default configuration file {%s}",
+							DEFAULT_PROPERTIES_FILE), e);
+				} catch (IOException e) {
+					LOGGER.error(String.format(
+							"Failed to load default configuration file {%s}",
+							DEFAULT_PROPERTIES_FILE), e);
+				}
+			} else {
+				LOGGER.error(DEFAULT_PROPERTIES_FILE
+						+ " file has not been found in your classpath. ");
+			}
 		}
+		
+		
+		//check a specific config file to override some properties
+		File specificFile  = new File(homePath+"/etc/"+SPECIFIC_PROPERTIES_FILE);
+		if(specificFile != null && specificFile.exists()) {
+			LOGGER.info(String.format("Found file conf {%s}",
+					specificFile.toString()));
+			try {
+				serverProperties.load(new FileInputStream(specificFile));
+			} catch (FileNotFoundException e) {
+				LOGGER.error(String.format(
+						"Failed to load configuration file {%s}",
+						specificFile), e);
+			} catch (IOException e) {
+				LOGGER.error(String.format(
+						"Failed to load configuration file {%s}",
+						specificFile), e);
+			}
+		}
+		
+		
+
 
 		servletContext.addServlet(
 				new ServletHolder(context.getBean(LogGetServlet.class)),
@@ -110,4 +168,6 @@ public class LoggingBox {
 
 		server.join();
 	}
+
+
 }

@@ -5,3 +5,4 @@
 loggingbox-server/data/
 loggingbox-server/war/WEB-INF/lib/
 *.war
+start/data

@@ -26,18 +26,6 @@
 			<artifactId>loggingbox-sql</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.tomcat</groupId> -->
-		<!-- <artifactId>tomcat-catalina</artifactId> -->
-		<!-- <version>7.0.34</version> -->
-		<!-- <scope>compile</scope> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>org.apache.tomcat</groupId> -->
-		<!-- <artifactId>tomcat-coyote</artifactId> -->
-		<!-- <version>7.0.34</version> -->
-		<!-- <scope>compile</scope> -->
-		<!-- </dependency> -->
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-websocket</artifactId>
@@ -82,31 +70,12 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-resources-plugin</artifactId>
-					<version>2.5</version>
-				</plugin>
-				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
 					<version>1.0.0</version>
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-resources-plugin</artifactId>
-										<versionRange>[2.5,)</versionRange>
-										<goals>
-											<goal>resources</goal>
-											<goal>testResources</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
@@ -148,32 +117,24 @@
 			</plugins>
 
 		</pluginManagement>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<version>2.0</version>
+		
+		  <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
 
-				<configuration>
-					<warSourceDirectory>war</warSourceDirectory>
-					<outputDirectory>war</outputDirectory>
-				</configuration>
-			</plugin>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>2.2</version>
 				<executions>
 					<execution>
 						<id>auto-clean</id>
-						<phase>validate</phase>
+                        <phase>clean</phase>
 						<goals>
 							<goal>clean</goal>
 						</goals>
