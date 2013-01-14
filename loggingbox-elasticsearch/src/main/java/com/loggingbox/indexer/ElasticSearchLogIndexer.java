@@ -12,6 +12,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -42,14 +43,10 @@ public class ElasticSearchLogIndexer implements LogIndexer {
 	private final static String INDEX = "logging_box";
 	private final static String LOG = "log";
 
-	private final static String LOG_SOURCE = "{\"log\":{" +
-			"\"properties\" : {" +
-				"\"id\" : {\"index\" : \"not_analyzed\"}"+
-				"\"data\" : {\"index\" : \"\"}"+
-			"} " +
-			"}";
-	
-	
+	private final static String LOG_SOURCE = "{\"log\":{"
+			+ "\"properties\" : {" + "\"id\" : {\"index\" : \"not_analyzed\"}"
+			+ "\"data\" : {\"index\" : \"\"}" + "} " + "}";
+
 	private final static String FIELD_ID = "id";
 	private final static String FIELD_APPLICATION_ID = "applicationId";
 	private final static String FIELD_HOST = "host";
@@ -102,31 +99,10 @@ public class ElasticSearchLogIndexer implements LogIndexer {
 	@Override
 	public void indexLog(Log log) {
 		try {
-			XContentBuilder contentBuilder = jsonBuilder().startObject();
-
-			contentBuilder = contentBuilder.field(FIELD_APPLICATION_ID,
-					log.getApplicationId());
-
-			contentBuilder = contentBuilder.field(FIELD_DATE, log.getDate()
-					.getTime());
-			contentBuilder = contentBuilder.field(FIELD_DATA, log.getData());
-			if (log.getHost() != null) {
-				contentBuilder = contentBuilder
-						.field(FIELD_HOST, log.getHost());
-			}
-			if (log.getType() != null) {
-				contentBuilder = contentBuilder
-						.field(FIELD_TYPE, log.getType());
-			}
-			if (log.getLevel() != null) {
-				contentBuilder = contentBuilder.field(FIELD_LEVEL, log
-						.getLevel().toString());
-			}
-			contentBuilder = contentBuilder.field(FIELD_ID, log.getId())
-					.endObject();
+			
 
 			getClient().prepareIndex(INDEX, LOG, log.getId())
-					.setSource(contentBuilder).execute().actionGet();
+					.setSource(getContentBuilder(log)).execute().actionGet();
 		} catch (IOException ex) {
 			LOGGER.error("Failed to index log", ex);
 		}
@@ -134,19 +110,63 @@ public class ElasticSearchLogIndexer implements LogIndexer {
 	}
 
 	@Override
+	public void indexLogs(List<Log> logs) {
+		try {
+			BulkRequestBuilder bulkBuilder = getClient().prepareBulk();
+
+			for (Log log : logs) {
+				bulkBuilder = bulkBuilder.add(getClient().prepareIndex(INDEX, LOG,
+						log.getId()).setSource(getContentBuilder(log)));
+			}
+
+			bulkBuilder.execute().actionGet();
+		} catch (IOException ex) {
+			LOGGER.error("Failed to index logs", ex);
+		}
+	}
+	
+	private XContentBuilder getContentBuilder(Log log) throws IOException {
+		XContentBuilder contentBuilder = jsonBuilder().startObject();
+
+		contentBuilder = contentBuilder.field(FIELD_APPLICATION_ID,
+				log.getApplicationId());
+
+		contentBuilder = contentBuilder.field(FIELD_DATE, log.getDate()
+				.getTime());
+		contentBuilder = contentBuilder.field(FIELD_DATA, log.getData());
+		if (log.getHost() != null) {
+			contentBuilder = contentBuilder
+					.field(FIELD_HOST, log.getHost());
+		}
+		if (log.getType() != null) {
+			contentBuilder = contentBuilder
+					.field(FIELD_TYPE, log.getType());
+		}
+		if (log.getLevel() != null) {
+			contentBuilder = contentBuilder.field(FIELD_LEVEL, log
+					.getLevel().toString());
+		}
+		contentBuilder = contentBuilder.field(FIELD_ID, log.getId())
+				.endObject();
+		return contentBuilder;
+	}
+
+	@Override
 	public SearchResult searchLogs(Search search) {
 		List<Log> logs = new ArrayList<Log>();
 
 		QueryBuilder qb = QueryBuilders
-				.termQuery(FIELD_DATA, search.getToken());
+				.termQuery(FIELD_DATA, search.getToken().toLowerCase());
 
 		qb = QueryBuilders.filteredQuery(
 				qb,
 				FilterBuilders.termFilter(FIELD_APPLICATION_ID,
 						search.getApplicationId()));
 
-		LOGGER.info(String.format("{%s} Search query {%s}  ",
-				search.getApplicationId(), search.getToken()));
+		LOGGER.info(String.format("{%s} Search query {%s} {%s, %s}  ",
+				search.getApplicationId(), search.getToken(), search.getFrom(), search.getSize()));
+
+		SearchResult searchResult = new SearchResult();
 		try {
 			SearchResponse response = getClient()
 					.prepareSearch(INDEX)
@@ -154,9 +174,10 @@ public class ElasticSearchLogIndexer implements LogIndexer {
 					.addFields(FIELD_DATA, FIELD_DATE, FIELD_HOST, FIELD_LEVEL,
 							FIELD_TYPE)
 					.setSearchType(SearchType.DFS_QUERY_AND_FETCH).setQuery(qb)
-					.setFrom(0).setSize(100).setExplain(true).execute()
+					.setFrom(search.getFrom()).setSize(search.getSize()).setExplain(true).execute()
 					.actionGet();
 
+			searchResult.setItemFounds(response.getHits().getTotalHits());
 			SearchHits hits = response.getHits();
 			for (SearchHit hit : hits.getHits()) {
 				String logId = hit.getId();
@@ -193,10 +214,11 @@ public class ElasticSearchLogIndexer implements LogIndexer {
 
 		LOGGER.info(String.format("Find {%s} results", logs.size()));
 
-		SearchResult searchResult = new SearchResult();
 		searchResult.setLogs(logs);
 		searchResult.setApplicationId(search.getApplicationId());
 		searchResult.setToken(search.getToken());
+		searchResult.setFrom(search.getFrom());
+		searchResult.setSize(search.getSize());
 		return searchResult;
 	}
 

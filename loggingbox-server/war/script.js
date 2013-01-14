@@ -74,53 +74,37 @@ var server = {
 						x : jsonObject.date,
 						y : jsonObject.value
 					});
-					if(graphsData[jsonObject.kpiDefinitionId].length > 300) {
-						graphsData[jsonObject.kpiDefinitionId].shift();
-					}
-					if (typeof graphs[jsonObject.kpiDefinitionId] === 'undefined') {
-						graphs[jsonObject.kpiDefinitionId] = new Rickshaw.Graph({
-							element : document.querySelector('#div'+jsonObject.kpiDefinitionId+'Chart'),
-							width : 580,
-							height : 250,
-							series : [ {
-								color : 'steelblue',
-								data : graphsData[jsonObject.kpiDefinitionId]
-							} ]
-						});
-
-						var axes = new Rickshaw.Graph.Axis.Time( { graph: graphs[jsonObject.kpiDefinitionId] } );
-
-						var y_axis = new Rickshaw.Graph.Axis.Y( {
-						        graph: graphs[jsonObject.kpiDefinitionId],
-						        orientation: 'left',
-						        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-						        element: document.getElementById('div'+jsonObject.kpiDefinitionId+'Chart_y_axis'),
-						} );
-						
-						graphs[jsonObject.kpiDefinitionId].render();
-					}else {
-						graphs[jsonObject.kpiDefinitionId].update();
-					}
-				
-				
-			} else if (jsonObject.objectType == 'com.log.model.result.SearchResult') {
-				
-				
-				
-				var logContainer = $('#logSearchContainer');
-				logContainer.html('');
-				
-				if(jsonObject.logs) {
-					for(var i = 0; i < jsonObject.logs.length; i++) {
-						var log = jsonObject.logs[i];
-						if(log.data) {
-							var divData = buildLogDiv(log);
-							logContainer.append(divData);
-						}
-					}
+				if(graphsData[jsonObject.kpiDefinitionId].length > 300) {
+					graphsData[jsonObject.kpiDefinitionId].shift();
 				}
-				
-				
+				if (typeof graphs[jsonObject.kpiDefinitionId] === 'undefined') {
+					graphs[jsonObject.kpiDefinitionId] = new Rickshaw.Graph({
+						element : document.querySelector('#div'+jsonObject.kpiDefinitionId+'Chart'),
+						width : 580,
+						height : 250,
+						series : [ {
+							color : 'steelblue',
+							data : graphsData[jsonObject.kpiDefinitionId]
+						} ]
+					});
+
+					var axes = new Rickshaw.Graph.Axis.Time( { graph: graphs[jsonObject.kpiDefinitionId] } );
+
+					var y_axis = new Rickshaw.Graph.Axis.Y( {
+					        graph: graphs[jsonObject.kpiDefinitionId],
+					        orientation: 'left',
+					        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+					        element: document.getElementById('div'+jsonObject.kpiDefinitionId+'Chart_y_axis'),
+					} );
+					
+					graphs[jsonObject.kpiDefinitionId].render();
+				}else {
+					graphs[jsonObject.kpiDefinitionId].update();
+				}
+			} else if (jsonObject.objectType == 'com.log.model.result.SearchResult') {
+				search.onSearchResult(jsonObject);
+			} else if (jsonObject.objectType == 'com.log.model.result.GetLogsResult') {
+				search.onGetLogsResult(jsonObject);
 			} 
 		}
 	},
@@ -130,16 +114,18 @@ var server = {
 	}
 };
 
-function buildLogDiv(log) {
+function buildLogDiv(log, htmlData) {
 	var divData = document.createElement('div');
-	var data = log.data;
-	if(log.host) {
-		data = '['+log.host+']  '+data;
+	if(!htmlData) {
+		htmlData = log.data;
 	}
-	data = data.replace(/\n/g, "<br />");
-	data = data.replace(/\t/g,
+	if(log.host) {
+		htmlData = '['+log.host+']  '+htmlData;
+	}
+	htmlData = htmlData.replace(/\n/g, "<br />");
+	htmlData = htmlData.replace(/\t/g,
 			"<span style=\"margin-left:30px;\"></span>");
-	divData.innerHTML = data;
+	divData.innerHTML = htmlData;
 	divData.className = 'log ';
 	if (log.level) {
 		divData.className += log.level;
@@ -169,9 +155,8 @@ function refreshFilter() {
 }
 function updateSearch() {
 	var token = $('#searchInput').val();
+	search.newToken(token);
 	
-	var searchCommand = '{"objectType": "com.log.model.command.Search", "token": "'+token+'"}';
-	server.send(searchCommand); 
 }
 
 
@@ -236,6 +221,229 @@ function extractUrlParams(){
 	return f;
 }
 
+
+var search =  {
+	searchPageSize : 50,
+	
+	newToken : function(newToken) {
+		this.currentIndex = 0;
+		this.resultCount = 0;
+		this.token = newToken;
+		this.resultLogs = new Array();
+		this.resultLogsMap = [];
+
+		var searchCommand = '{"objectType": "com.log.model.command.Search", "size": '+this.searchPageSize+', "from": 0,"token": "'+this.token+'"}';
+		server.send(searchCommand); 
+
+		$('#searchCurrentItem').html(0);
+		$('#searchItemCount').html(0);
+	},
+	
+	onSearchResult : function(searchResult) {
+		this.resultCount = searchResult.itemFounds;
+		if(searchResult.logs && searchResult.logs.length > 0) {
+			for(var i = 0; i < searchResult.logs.length; i++) {
+				var log = searchResult.logs[i];
+				if(log.data) {
+					this.resultLogs[searchResult.from+i] = log;
+					this.resultLogsMap[log.id] = log;
+				}
+			}
+			this.updateCurrentItem(true);
+		} else {
+
+			var logContainer = $('#logSearchContainer');
+			logContainer.html('No result')
+		}
+		$('#searchItemCount').html(this.resultCount);
+	},
+	
+
+	onGetLogsResult : function(getLogsResult) {
+		if(!getLogsResult.logs || getLogsResult.logs.length <= 1) {
+			if(getLogsResult.ascendingOrder) {
+				this.setLoadingBottom(false);
+			}else {
+				this.setLoadingTop(false);
+				this.noDataBefore = true;
+			}
+			return;
+		}
+		var logContainer =  $('#logSearchContainer');
+		var currentLog = this.resultLogs[this.currentIndex];
+		var insertFirst = getLogsResult.logs[0].id > currentLog.id;
+		if(insertFirst && getLogsResult.ascendingOrder) {
+			this.firstLog = getLogsResult.logs[0];
+			if(!this.lastLog) {
+				this.lastLog = getLogsResult.logs[getLogsResult.logs.length-1];
+			}
+			this.setLoadingTop(false);
+			var containsCurrentIndex = false;
+			for(var i = getLogsResult.logs.length-1; i >= 0; i--) {
+				var log = getLogsResult.logs[i];
+				var divData;
+				//check if the log is the current selected log
+				if(log.id == this.resultLogs[this.currentIndex].id) {
+					htmlData = log.data;
+					var lc = log.data.toLowerCase();
+					var indexOfToken = lc.indexOf(this.token.toLowerCase());
+					if(indexOfToken > 0) {
+						htmlData = htmlData.substring(0, indexOfToken)+'<span class="searchToken">'+
+						htmlData.substring(indexOfToken, indexOfToken+this.token.length)+'</span>'+
+						htmlData.substring(indexOfToken+this.token.length);
+					}
+					
+					divData = buildLogDiv(log, htmlData);
+					containsCurrentIndex = true;
+				}else {
+					divData = buildLogDiv(log);
+				}
+				
+				//check if the log is in the search result
+				if(log.id in this.resultLogsMap) {
+					divData.style.fontWeight = 'bold';
+				}
+				
+				logContainer.prepend(divData);
+			}
+			if(containsCurrentIndex) {
+				$('#logSearchScrollContainer').scrollTop(200);
+			}
+		} else if(insertFirst && !getLogsResult.ascendingOrder) {
+			this.setLoadingTop(false);
+			var firstChild = $('#logSearchContainer').children("div:first-child");
+			this.firstLog = getLogsResult.logs[getLogsResult.logs.length-1];
+			for(var i = 1; i < getLogsResult.logs.length; i++) {
+				var log = getLogsResult.logs[i];
+				var divData;
+				divData = buildLogDiv(log);
+				//check if the log is in the search result
+				if(log.id in this.resultLogsMap) {
+					divData.style.fontWeight = 'bold';
+				}
+				logContainer.prepend(divData);
+			}
+
+			$('#logSearchScrollContainer').scrollTop( firstChild.offset().top-logContainer.offset().top);
+		} else {
+			this.lastLog = getLogsResult.logs[getLogsResult.logs.length-1];
+			if(!this.firstLog) {
+				this.firstLog = getLogsResult.logs[0].id;
+			}
+			this.setLoadingBottom(false);
+			
+			for(var i = 1; i < getLogsResult.logs.length; i++) {
+				var log = getLogsResult.logs[i];
+				var divData;
+				divData = buildLogDiv(log);
+				
+				//check if the log is in the search result
+				if(log.id in this.resultLogsMap) {
+					divData.style.fontWeight = 'bold';
+				}
+				
+				logContainer.append(divData);
+			}
+		}
+		
+
+	},
+	
+	updateCurrentItem : function(ascending) {
+		 $('#logSearchContainer').html('');
+
+		 this.setLoadingBottom(false);
+		 this.setLoadingTop(false);
+		 this.noDataBefore = false;
+		
+		if(this.currentIndex in this.resultLogs) {
+			var log = this.resultLogs[this.currentIndex];
+			this.setLoadingTop(true);
+			var getLogsCommand = '{"objectType": "com.log.model.command.GetLogs", "offset": 15, "maxItemNumber":100,  "startLogId": "'+log.id+'"}';
+			server.send(getLogsCommand);
+			$('#searchCurrentItem').html(this.currentIndex+1);
+		} else {
+			var from;
+			if(ascending) {
+				from = this.currentIndex;
+				
+			} else {
+				from = this.currentIndex-this.searchPageSize +1;
+				if(from < 0) {
+					from = 0;
+				}
+			}
+			var searchCommand = '{"objectType": "com.log.model.command.Search", "size": '+this.searchPageSize+', "from": '+from+',"token": "'+this.token+'"}';
+			server.send(searchCommand); 
+		}
+	},
+	
+	nextItem : function() {
+		this.currentIndex++;
+		if(this.currentIndex >= this.resultCount) {
+			this.currentIndex =  0;
+		}
+		this.updateCurrentItem(true);
+	},
+	previousItem : function() {
+		this.currentIndex--;
+		if(this.currentIndex < 0) {
+			this.currentIndex =  this.resultCount-1;
+		}
+		this.updateCurrentItem(false);
+	},
+	onScroll : function() {
+		if($('#logSearchContainer').height() <= 32) {
+			//no enough data to scroll
+			return;
+		}
+		var isBottom = $('#logSearchScrollContainer').scrollTop() >= $(
+		'#logSearchContainer').height()- $('#logSearchScrollContainer').height();
+		var isTop = $('#logSearchScrollContainer').scrollTop() <= 50;
+		if( !this.loadingBottom && isBottom) {
+			this.setLoadingBottom(true);
+			var getLogsCommand = '{"objectType": "com.log.model.command.GetLogs", "offset": 0, "maxItemNumber":100,  "startLogId": "'+this.lastLog.id+'"}';
+			server.send(getLogsCommand);
+		}else if(!this.loadingTop && isTop &&  !this.noDataBefore) {
+
+			this.setLoadingTop(true);
+			var getLogsCommand = '{"objectType": "com.log.model.command.GetLogs", "ascendingOrder": false,  "offset": 0, "maxItemNumber":100,  "startLogId": "'+this.firstLog.id+'"}';
+			server.send(getLogsCommand);
+	
+		}
+	},
+	setLoadingTop : function(show) {
+		
+		if(show && !this.loadingTop){
+			this.loadingTop = true;
+			
+			var logContainer = $('#logSearchContainer');
+			var divData = document.createElement('div');
+			divData.className = 'loading ';
+			logContainer.prepend(divData);
+		}else if(!show && this.loadingTop){
+			this.loadingTop = false;
+			 $('#logSearchContainer').children("div:first-child").remove();
+		}
+		
+	},
+	setLoadingBottom : function(show) {
+		if(show && !this.loadingBottom){
+			this.loadingBottom = true;
+			var logContainer = $('#logSearchContainer');
+			
+			var divData = document.createElement('div');
+			divData.className = 'loading ';
+			logContainer.append(divData);
+			
+		}else if(!show && this.loadingBottom){
+			 this.loadingBottom = false;
+			 $('#logSearchContainer').children("div:last-child").remove();
+		}
+	}
+	
+	
+};
 
 
 /*

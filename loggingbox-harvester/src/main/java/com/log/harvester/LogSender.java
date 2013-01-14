@@ -96,12 +96,12 @@ public class LogSender extends Thread {
 			}
 
 			sendLogs();
-			if (errorNumber > 3) {
+			if (errorNumber > 2) {
 				// if we have more the 3 errors here, we empty the list : we
 				// don't want out
 				// of memory error because server is not responding.
 				LOGGER.warn("Some logs won't be sent, because server is not responding");
-				break;
+				continue;
 			}
 
 			readingQueue.clear();

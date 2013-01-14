@@ -28,7 +28,9 @@ import com.log.model.ApplicationObject;
 import com.log.model.KpiDefinition;
 import com.log.model.Log;
 import com.log.model.command.Export;
+import com.log.model.command.GetLogs;
 import com.log.model.command.Search;
+import com.log.model.result.GetLogsResult;
 import com.log.storage.ApplicationAccessor;
 import com.log.storage.LogAccessor;
 import com.log.storage.LogIndexer;
@@ -90,6 +92,9 @@ public class LogGetServlet extends WebSocketServlet {
 		}
 
 		private void sendMessage(ApplicationObject object) {
+			if(connection == null) {
+				return;
+			}
 			try {
 				connection.sendMessage(objectMapper.writeValueAsString(object));
 			} catch (JsonGenerationException e) {
@@ -122,10 +127,11 @@ public class LogGetServlet extends WebSocketServlet {
 			for (KpiDefinition kpiDefinition : kpis) {
 				sendMessage(kpiDefinition);
 			}
-			List<Log> oldLogs = logAccessor.getLogs(application.getId(), null,
-					1000);
-			for (int i = oldLogs.size() - 1; i >= 0; i--) {
-				Log log = oldLogs.get(i);
+			GetLogsResult oldLogs = logAccessor.getLogs(
+					new GetLogs(applicationId, 500, null, false));
+					
+			for (int i = oldLogs.getLogs().size() - 1; i >= 0; i--) {
+				Log log = oldLogs.getLogs().get(i);
 				sendMessage(log);
 
 			}
@@ -155,6 +161,9 @@ public class LogGetServlet extends WebSocketServlet {
 						Search search = new Search();
 						search.setApplicationId(applicationId);
 						search.setToken(jsonNode.get("token").asText());
+						search.setSize(jsonNode.get("size").getIntValue());
+						search.setFrom(jsonNode.get("from").getIntValue());
+						
 						sendMessage(logIndexer.searchLogs(search));
 					} else if (typeNode != null
 							&& typeNode.asText().equals(
@@ -169,6 +178,23 @@ public class LogGetServlet extends WebSocketServlet {
 								.asLong()));
 
 						sendMessage(logExporter.exportLogs(export));
+					} else if (typeNode != null
+							&& typeNode.asText().equals(
+									"com.log.model.command.GetLogs")) {
+						LOGGER.debug("Get logs command : "
+								+ jsonNode.toString());
+						GetLogs getLogs = new GetLogs();
+						getLogs.setApplicationId(applicationId);
+						getLogs.setMaxItemNumber(jsonNode.get("maxItemNumber")
+								.asInt());
+						getLogs.setStartLogId(jsonNode.get("startLogId").asText());
+						getLogs.setOffset(jsonNode.get("offset").asInt());
+						if(jsonNode.has("ascendingOrder")) {
+							getLogs.setAscendingOrder(jsonNode.get("ascendingOrder").asBoolean());
+						}else {
+							getLogs.setAscendingOrder(true);
+						}
+						sendMessage(logAccessor.getLogs(getLogs));
 					}
 
 				}

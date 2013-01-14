@@ -73,6 +73,9 @@
 		
             <div id="searchOptionsContainer">
                 <input id="searchInput" type="text">
+                <span id="searchCurrentItem">0</span>/<span id="searchItemCount">0</span>
+                <input type="button" value="previous" onclick="search.previousItem();"/>
+                <input type="button" value="next" onclick="search.nextItem();"/>
             </div>
 			
             <div id='logSearchScrollContainer'>
@@ -137,6 +140,9 @@
 		$('#searchInput').change(function() {
             updateSearch();
         });
+		$('#logSearchScrollContainer').scroll(function() {
+			 search.onScroll();
+			   });
 	</script>
 </body>
 </html>

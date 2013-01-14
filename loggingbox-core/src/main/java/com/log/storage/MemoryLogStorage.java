@@ -11,6 +11,8 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 import com.log.model.Log;
+import com.log.model.command.GetLogs;
+import com.log.model.result.GetLogsResult;
 
 
 
@@ -43,30 +45,46 @@ public class MemoryLogStorage implements LogAccessor {
 		logs.put(log.getId(), log);
 
 	}
+	@Override
+	public void insertLogs(List<Log> logs) {
+		for(Log log : logs) {
+			insertLog(log);
+		}
+		
+	}
 
 	@Override
-	public  synchronized List<Log> getLogs(String applicationId, String beginLogId,
-			int maxNumber) {
+	public  synchronized GetLogsResult getLogs(GetLogs getLogs) {
+		GetLogsResult result = new GetLogsResult();
+		List<Log> logsList = new ArrayList<Log>();
 
-		List<Log> result = new ArrayList<Log>();
-
-		TreeMap<String, Log> logs = logsByApplicationId.get(applicationId);
+		TreeMap<String, Log> logs = logsByApplicationId.get(getLogs.getApplicationId());
 		if (logs != null && !logs.isEmpty()) {
 			String startKey = null;
-			if (beginLogId != null && logs.containsKey(beginLogId)) {
-				startKey = logs.higherKey(beginLogId);
+			if (getLogs.getStartLogId() != null && logs.containsKey(getLogs.getStartLogId())) {
+				if(getLogs.isAscendingOrder()) {
+					startKey = logs.higherKey(getLogs.getStartLogId());
+				}else {
+					startKey = logs.lowerKey(getLogs.getStartLogId());
+				}
 
 			}
 			if (startKey == null) {
-				startKey = logs.firstKey();
+				if(getLogs.isAscendingOrder()) {
+					startKey = logs.lastKey();
+				}else {
+					startKey = logs.firstKey();
+				}
 			}
 			
 			String currentKey = startKey;
-			while(currentKey != null && result.size() <= maxNumber) {
-				result.add(logs.get(currentKey));
+			while(currentKey != null && logsList.size() <= getLogs.getMaxItemNumber()) {
+				logsList.add(logs.get(currentKey));
 				currentKey = logs.higherKey(currentKey);
 			}
 		}
+		result.setApplicationId(getLogs.getApplicationId());
+		result.setLogs(logsList);
 		return result;
 	}
 
@@ -76,5 +94,7 @@ public class MemoryLogStorage implements LogAccessor {
 		LOGGER.error("getLogs is not implemented");
 		return null;
 	}
+
+	
 
 }

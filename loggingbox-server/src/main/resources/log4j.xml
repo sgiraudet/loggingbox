@@ -7,17 +7,6 @@
 			<param name="ConversionPattern" value="%d [%t] %-5p %c - %m%n" />
 		</layout>
 	</appender>
-
-	<appender name="loggingBox" class="com.log.LogAppender">
-
-		<param name="applicationId" value="test" />
-		<param name="host" value="localhost" />
-		<param name="port" value="8080" />
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%d [%t] %-5p %c - %m%n" />
-		</layout>
-	</appender>
-
 	<category name="org.springframework">
 		<priority value="WARN" />
 	</category>
@@ -32,9 +21,13 @@
     <category name="org.eclipse.jetty">
         <priority value="INFO" />
     </category>
+    
+    <category name="com.mchange">
+        <priority value="WARN" />
+    </category>
+   
 	<root>
 		<priority value="TRACE" />
 		<appender-ref ref="console" />
- 		<appender-ref ref="loggingBox" /> 
 	</root>
 </log4j:configuration>

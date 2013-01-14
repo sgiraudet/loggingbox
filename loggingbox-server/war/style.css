@@ -82,11 +82,11 @@ HTML,BODY {
 }
 
 #archive_tab .icon {
-	background-position: 0px -60px;
+    background-position: 0px -90px;
 }
 
 #search_tab .icon {
-	background-position: 0px -90px;
+    background-position: 0px -60px;
 }
 
 #workspacePanel {
@@ -204,7 +204,7 @@ HTML,BODY {
 }
 
 
-#searchOptionsContainer INPUT {
+#searchOptionsContainer INPUT[type="text"] {
     height: 33px;
     width: 400px;
     padding: 4px 20px 4px 4px;
@@ -213,3 +213,16 @@ HTML,BODY {
     float: left;
     border: 1px solid #CCC;
 }
+
+#logSearchContainer  .searchToken {
+	background-color: #F87431;
+}
+#logSearchContainer .loading {
+	width: 32px;
+	height: 32px;
+	margin:10px auto;
+	background-image: url("loading.gif");
+}
+
+
+

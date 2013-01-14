@@ -1,7 +1,9 @@
 package com.loggingbox.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.ServletException;
@@ -22,6 +24,9 @@ import com.log.model.Log;
 @Component
 public class LogsInsertServlet extends HttpServlet {
 
+
+//	private static final Logger LOGGER = Logger.getLogger(LogsInsertServlet.class);
+	
 	private static final long serialVersionUID = 1487728256420276137L;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
@@ -46,6 +51,7 @@ public class LogsInsertServlet extends HttpServlet {
 			}
 
 			JsonNode jsonNode = objectMapper.readTree(logsString);
+			List<Log> logsToInsert = new ArrayList<Log>();
 			if (jsonNode.isArray()) {
 				for (int i = 0; i < jsonNode.size(); i++) {
 					JsonNode logNode = jsonNode.get(i);
@@ -76,11 +82,12 @@ public class LogsInsertServlet extends HttpServlet {
 						} catch (Exception ex) {
 						}
 					}
+					logsToInsert.add(log);
 
-					logComponent.insertLog(log);
 				}
 
 			}
+			logComponent.insertLog(logsToInsert);
 			resp.getWriter().write("OK");
 		} catch (Exception ex) {
 			ex.printStackTrace();

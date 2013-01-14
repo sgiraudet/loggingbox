@@ -10,6 +10,9 @@ public class Search implements ApplicationObject{
 	
 	private String applicationId;
 	private String token;
+
+	private int from;
+	private int size;
 	
 	public Search() {
 	}
@@ -36,6 +39,22 @@ public class Search implements ApplicationObject{
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public int getFrom() {
+		return from;
+	}
+
+	public int getSize() {
+		return size;
+	}
+
+	public void setFrom(int from) {
+		this.from = from;
+	}
+
+	public void setSize(int size) {
+		this.size = size;
 	}
 
 }

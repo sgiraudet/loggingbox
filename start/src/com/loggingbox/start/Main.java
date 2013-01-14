@@ -73,7 +73,11 @@ public class Main {
 		
 		Class<?> cls = Class.forName(LAUNCHER_CLASS, true, classLoader);
 		Method meth = cls.getMethod("main", String[].class);
-		meth.invoke(null, (Object) args); 
+		
+		String[] newArgs = new String[2];
+		newArgs[0] = args[0];
+		newArgs[1] = "1";
+		meth.invoke(null, (Object) newArgs); 
 	}
 
 }

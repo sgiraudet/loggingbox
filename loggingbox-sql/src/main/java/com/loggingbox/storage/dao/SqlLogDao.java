@@ -23,37 +23,42 @@ public class SqlLogDao {
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<SqlLog> getLastLogs(String applicationId, String beginLogId,
-			int maxNumber) {
+	public List<SqlLog> getLogsPage(String applicationId, String beginLogId,
+			int maxNumber, boolean ascendingOrder) {
 
 		Criteria criteria = sessionFactory.getCurrentSession()
 				.createCriteria(SqlLog.class)
 				.add(Restrictions.eq("applicationId", applicationId));
-		if(beginLogId != null) {
-			criteria = criteria.add(Restrictions.gt("id", beginLogId));
+		if (beginLogId != null) {
+			if (ascendingOrder) {
+				criteria = criteria.add(Restrictions.le("id", beginLogId));
+			} else {
+				criteria = criteria.add(Restrictions.ge("id", beginLogId));
+			}
 		}
-		return (List<SqlLog>) criteria.addOrder(Order.asc("id"))
-				.setMaxResults(maxNumber).list();
+		if (ascendingOrder) {
+			criteria = criteria.addOrder(Order.desc("id"));
+		} else {
+			criteria = criteria.addOrder(Order.asc("id"));
+		}
+		return (List<SqlLog>) criteria.setMaxResults(maxNumber).list();
 
 	}
-	
-	
 
 	@SuppressWarnings("unchecked")
-	public List<SqlLog> getLogs(String applicationId, Date fromDate, Date toDate,
-			String beginLogId, Integer maxNumber) {
-		
+	public List<SqlLog> getLogs(String applicationId, Date fromDate,
+			Date toDate, String beginLogId, Integer maxNumber) {
+
 		Criteria criteria = sessionFactory.getCurrentSession()
 				.createCriteria(SqlLog.class)
 				.add(Restrictions.eq("applicationId", applicationId))
 				.add(Restrictions.gt("date", fromDate))
 				.add(Restrictions.lt("date", toDate));
-		if(beginLogId != null) {
-			criteria = criteria.add(Restrictions.lt("id", beginLogId));
+		if (beginLogId != null) {
+			criteria = criteria.add(Restrictions.le("id", beginLogId));
 		}
-		return (List<SqlLog>) criteria
-				.addOrder(Order.desc("id"))
+		return (List<SqlLog>) criteria.addOrder(Order.desc("id"))
 				.setMaxResults(maxNumber).list();
-		
+
 	}
 }

@@ -10,11 +10,11 @@
            http://www.springframework.org/schema/tx
            http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 
-	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
 		destroy-method="close">
-		<property name="driverClassName" value="${hibernate.driverClassName}" />
-		<property name="url" value="${hibernate.url}" />
-		<property name="username" value="${hibernate.username}" />
+		<property name="driverClass" value="${hibernate.driverClassName}" />
+		<property name="jdbcUrl" value="${hibernate.url}" />
+		<property name="user" value="${hibernate.username}" />
 		<property name="password" value="${hibernate.password}" />
 	</bean>
 
@@ -25,8 +25,8 @@
 		<property name="annotatedClasses">
 			<list>
 				<value>com.loggingbox.storage.model.SqlLog</value>
-                <value>com.loggingbox.storage.model.SqlApplication</value>
-                <value>com.loggingbox.storage.model.SqlKpiDefinition</value>
+				<value>com.loggingbox.storage.model.SqlApplication</value>
+				<value>com.loggingbox.storage.model.SqlKpiDefinition</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">
@@ -35,7 +35,21 @@
 				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
 				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
 				<prop key="hibernate.connection.pool_size">${hibernate.connection.pool_size}</prop>
-                <prop key="hibernate.connection.autoReconnect">true</prop>
+				<prop key="hibernate.connection.autoReconnect">true</prop>
+
+				<!-- configuration pool via c3p0 -->
+				<prop key="hibernate.connection.provider_class">org.hibernate.connection.C3P0ConnectionProvider
+				</prop>
+				<prop key="hibernate.c3p0.acquire_increment">5</prop>
+				<prop key="hibernate.c3p0.idle_test_period">1800</prop>
+				<prop key="hibernate.c3p0.max_size">600</prop>
+				<prop key="hibernate.c3p0.max_statements">50</prop>
+				<prop key="hibernate.c3p0.min_size">5</prop>
+				<prop key="hibernate.c3p0.timeout">1800</prop>
+                <prop key="hibernate.c3p0.testConnectionOnCheckout">true</prop>
+				
+    
+
 			</props>
 		</property>
 	</bean>

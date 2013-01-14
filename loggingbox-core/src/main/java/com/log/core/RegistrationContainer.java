@@ -38,6 +38,28 @@ public class RegistrationContainer {
 			}
 		}
 	}
+	
+	public void appendObjects(List<? extends ApplicationObject> objects) {
+		if(objects.isEmpty()) {
+			return;
+		}
+		String applicationId = objects.get(0).getApplicationId();
+		List<ApplicationRegistration> applicationRegistrations = null;
+
+		synchronized (registrations) {
+			applicationRegistrations = registrations.get(applicationId);
+		}
+		if (applicationRegistrations != null) {
+			synchronized (applicationRegistrations) {
+				for (ApplicationRegistration applicationRegistration : applicationRegistrations) {
+					for(ApplicationObject object : objects) {
+						assert object.getApplicationId().equals(applicationId);
+						applicationRegistration.appendLog(object);
+					}
+				}
+			}
+		}
+	}
 
 	public void register(ApplicationRegistration applicationRegistration) {
 		String applicationId = applicationRegistration.getApplication().getId();

@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.List;
 
 import com.log.model.Log;
+import com.log.model.command.GetLogs;
+import com.log.model.result.GetLogsResult;
 
 /**
  * Interface to access or store Log objects.
@@ -20,21 +22,21 @@ public interface LogAccessor {
 	 * @param log
 	 */
 	void insertLog(Log log);
+	
+
+	/**
+	 * Insert a list of logs.
+	 * @param logs
+	 */
+	void insertLogs(List<Log> logs);
 
 	/**
 	 * Get a page of logs.
-	 * 
-	 * @param applicationId
-	 *            : Id of the application
-	 * @param beginLogId
-	 *            : if null, start from the last log inserted (most recet date).
-	 *            Else, start from the log just before the log id specified.
-	 * @param maxNumber
-	 *            : maxNumber of logs to retrieve
-	 * 
+	
+	 * @param getLogs
 	 * @return
 	 */
-	List<Log> getLogs(String applicationId, String beginLogId, int maxNumber);
+	GetLogsResult getLogs(GetLogs getLogs);
 
 	/**
 	 * 

@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.InetAddress;
 import java.net.URL;
 
 import javax.servlet.ServletContextEvent;
@@ -25,7 +24,6 @@ import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.log.harvester.SystemHarvester;
 import com.loggingbox.service.ServerProperties;
 import com.loggingbox.servlet.LogGetServlet;
 import com.loggingbox.servlet.LogInsertServlet;
@@ -35,28 +33,30 @@ public class LoggingBox {
 
 	private final static String DEFAULT_PROPERTIES_FILE = "default.properties";
 	private final static String SPECIFIC_PROPERTIES_FILE = "loggingbox.properties";
-	
-	
+
 	public static void main(String[] args) throws Exception {
-		
+
 		String homePath = "";
-		if(args != null && args.length > 0) {
-			homePath = args[0];
-			
-			System.setProperty("loggingbox.home", homePath); 
-			PrintStream out = new PrintStream(new FileOutputStream(homePath+"/logs/loggingbox.out", true));
+
+		homePath = args[0];
+		System.setProperty("loggingbox.home", homePath);
+		
+		if (args.length > 1 && args[1].equals("1")) {
+			PrintStream out = new PrintStream(new FileOutputStream(homePath
+					+ "/logs/loggingbox.out", true));
 			System.setOut(out);
 			System.setErr(out);
 		}
+
 		Logger LOGGER = Logger.getLogger(LoggingBox.class);
-		
+
 		ContextLoaderListener contextLoaderListener = new ContextLoaderListener();
 		Server server = new Server(8080);
 
 		ResourceHandler resource_handler = new ResourceHandler();
 		resource_handler.setDirectoriesListed(true);
 		resource_handler.setWelcomeFiles(new String[] { "index.html" });
-		resource_handler.setResourceBase(homePath+"/war");
+		resource_handler.setResourceBase(homePath + "/war");
 
 		ServletContextHandler servletContext = new ServletContextHandler();
 		servletContext.setContextPath("/api");
@@ -82,14 +82,12 @@ public class LoggingBox {
 		WebApplicationContext context = ContextLoaderListener
 				.getCurrentWebApplicationContext();
 
-	
 		ServerProperties serverProperties = context
 				.getBean(ServerProperties.class);
-		
-		
-		//load the default config file
-		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(
-				DEFAULT_PROPERTIES_FILE);
+
+		// load the default config file
+		InputStream is = Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream(DEFAULT_PROPERTIES_FILE);
 		if (is != null) {
 			LOGGER.info(String.format("Found default file conf {%s}",
 					DEFAULT_PROPERTIES_FILE));
@@ -105,8 +103,8 @@ public class LoggingBox {
 						DEFAULT_PROPERTIES_FILE), e);
 			}
 		} else {
-			URL url =	Thread.currentThread().getContextClassLoader().getResource(
-					DEFAULT_PROPERTIES_FILE);
+			URL url = Thread.currentThread().getContextClassLoader()
+					.getResource(DEFAULT_PROPERTIES_FILE);
 			if (url != null) {
 				LOGGER.info(String.format("Found default file conf {%s}",
 						url.toString()));
@@ -128,28 +126,25 @@ public class LoggingBox {
 						+ " file has not been found in your classpath. ");
 			}
 		}
-		
-		
-		//check a specific config file to override some properties
-		File specificFile  = new File(homePath+"/etc/"+SPECIFIC_PROPERTIES_FILE);
-		if(specificFile != null && specificFile.exists()) {
+
+		// check a specific config file to override some properties
+		File specificFile = new File(homePath + "/etc/"
+				+ SPECIFIC_PROPERTIES_FILE);
+		if (specificFile != null && specificFile.exists()) {
 			LOGGER.info(String.format("Found file conf {%s}",
 					specificFile.toString()));
 			try {
 				serverProperties.load(new FileInputStream(specificFile));
 			} catch (FileNotFoundException e) {
-				LOGGER.error(String.format(
-						"Failed to load configuration file {%s}",
-						specificFile), e);
+				LOGGER.error(
+						String.format("Failed to load configuration file {%s}",
+								specificFile), e);
 			} catch (IOException e) {
-				LOGGER.error(String.format(
-						"Failed to load configuration file {%s}",
-						specificFile), e);
+				LOGGER.error(
+						String.format("Failed to load configuration file {%s}",
+								specificFile), e);
 			}
 		}
-		
-		
-
 
 		servletContext.addServlet(
 				new ServletHolder(context.getBean(LogGetServlet.class)),
@@ -161,13 +156,12 @@ public class LoggingBox {
 				new ServletHolder(context.getBean(LogsInsertServlet.class)),
 				"/log/insert_batch");
 
-		SystemHarvester systemHarvester = new SystemHarvester(InetAddress
-				.getLocalHost().getHostName(), "8080", "test");
-		systemHarvester.setDelayInMs(10000);
-		systemHarvester.start();
+//		 SystemHarvester systemHarvester = new SystemHarvester(InetAddress
+//		 .getLocalHost().getHostName(), "8080", "test");
+//		 systemHarvester.setDelayInMs(10000);
+//		 systemHarvester.start();
 
 		server.join();
 	}
-
 
 }
