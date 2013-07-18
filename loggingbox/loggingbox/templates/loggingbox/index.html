@@ -1,0 +1,149 @@
+{% load staticfiles %}
+<html>
+<head>
+<title>Logs</title>
+<LINK href="{% static 'style.css' %}" title="compact" rel="stylesheet" type="text/css">
+
+<LINK href="{% static 'scripts/rickshaw.min.css' %}" title="compact" rel="stylesheet"
+	type="text/css">
+
+<script type="text/javascript"
+	src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+<script type="text/javascript" src="{% static 'script.js' %}"></script>
+
+<script src="{% static 'scripts/d3.min.js' %}"></script>
+<script src="{% static 'scripts/d3.layout.min.js' %}"></script>
+<script src="{% static 'scripts/rickshaw.min.js' %}"></script>
+
+
+
+<script type='text/javascript'>
+	if (!window.WebSocket)
+		alert("WebSocket not supported by this browser");
+</script>
+</head>
+<body>
+	<div id="navigationPanel">
+       <h1>Logging Box</h1>
+		<ul>
+			<li><a href="#live_logs" id="live_logs_tab"><span class="icon"></span><span class="label">Live logs</span></a></li>
+			<li><a href="#live_kpis" id="live_kpis_tab"><span class="icon"></span><span class="label">Live kpis</span></a></li>
+			<li><a href="#archive" id="archive_tab"><span class="icon"></span><span class="label">Archive</span></a></li>
+			<li><a href="#search" id="search_tab"><span class="icon"></span><span class="label">Search</span></a></li>
+		</ul>
+	</div>
+	<div id="workspacePanel">
+		<div id="live_logs">
+			<div id="filterContainer">
+				<div id="filterButtons">
+					<select id="levelFilterSelect">
+						<option value="ALL">All</option>
+						<option value="DEBUG">Debug</option>
+						<option value="INFO">Info</option>
+						<option value="WARN">Warn</option>
+						<option value="ERROR">Error</option>
+						<option value="SEVERE">Severe</option>
+					</select>
+				</div>
+				<input id="filter" type="text">
+				<div id="optionButtons">
+					<select id="bufferSizeSelect">
+						<option value="100">100</option>
+						<option value="200">200</option>
+						<option value="1000">1000</option>
+						<option value="2000" selected="selected">2000</option>
+						<option value="5000">5000</option>
+						<option value="10000">10000</option>
+					</select>
+				</div>
+			</div>
+
+			<div id='logScrollContainer'>
+				<div id='logContainer'></div>
+			</div>
+		</div>
+
+		<div id="live_kpis"></div>
+
+
+        <div id="archive">
+            <input id="archiveInput" type="button" onclick="exportCommand();" value="Export">
+        </div>
+
+		<div id="search">
+		
+            <div id="searchOptionsContainer">
+                <input id="searchInput" type="text">
+                <span id="searchCurrentItem">0</span>/<span id="searchItemCount">0</span>
+                <input type="button" value="previous" onclick="search.previousItem();"/>
+                <input type="button" value="next" onclick="search.nextItem();"/>
+            </div>
+			
+            <div id='logSearchScrollContainer'>
+                <div id='logSearchContainer'></div>
+            </div>
+		</div>
+
+
+	</div>
+
+
+
+	<script type='text/javascript'>
+		selectTab = function() {
+			var hash = window.location.hash;
+			if (!hash) {
+				hash = '#live_logs';
+				window.location.href = hash;
+			}
+
+			 $("#navigationPanel A").attr('class', '');
+			 
+			$('#live_logs').hide();
+			$('#live_kpis').hide();
+            $('#search').hide();
+            $('#archive').hide();
+
+			$(hash).show();
+			$(hash+"_tab").attr('class', 'selected');
+
+		}
+		function resize() {
+			$('#workspacePanel').height($(window).height()-4);
+			$('#workspacePanel').width($(window).width() - 154);
+
+			$('#logScrollContainer').height($(window).height() - 42);
+            $('#logSearchScrollContainer').height($(window).height() - 42);
+		}
+
+		server.connect();
+		selectTab();
+
+		$('#filter').keyup(function() {
+			refreshFilter();
+		});
+		$('#filter').change(function() {
+			refreshFilter();
+		});
+		$('#levelFilterSelect').change(function() {
+			refreshFilter();
+		});
+
+		$(window).resize(function() {
+			resize();
+		});
+		resize();
+
+		$(window).hashchange(function() {
+			selectTab();
+		});
+		
+		$('#searchInput').change(function() {
+            updateSearch();
+        });
+		$('#logSearchScrollContainer').scroll(function() {
+			 search.onScroll();
+			   });
+	</script>
+</body>
+</html>

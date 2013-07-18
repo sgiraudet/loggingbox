@@ -1,0 +1,228 @@
+HTML,BODY {
+	padding: 0px;
+	margin: 0px;
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+}
+
+#navigationPanel {
+	float: left;
+	width: 150px;
+	height: 100%;
+	background-color: #000;
+	color: #FFF;
+}
+
+#navigationPanel H1 {
+	font-size: 20px;
+	margin: 0;
+	padding: 10px 0 15px;
+	margin-bottom: 10px;
+	text-align: center;
+	color: #F87431;
+}
+
+#navigationPanel UL,#navigationPanel LI {
+	list-style-type: none;
+	margin: 0px;
+	padding: 0px;
+}
+
+#navigationPanel A {
+	color: #FFF;
+	font-size: 18px;
+	height: 26px;
+	width: 148px;
+	padding-top: 6px;
+	padding-bottom: 6px;
+	display: block;
+	text-decoration: none;
+	margin-left: 1px;
+}
+
+#navigationPanel A .icon {
+	background-image: url("sprite_w.png");
+	background-repeat: no-repeat;
+	margin: 0px 0px 0px 5px;
+	width: 26px;
+	height: 26px;
+	display: block;
+	float: left;
+}
+
+#navigationPanel A .label {
+	margin-left: 10px;
+	display: block;
+	float: left;
+	padding-top: 2px;
+	float: left;
+}
+
+#navigationPanel A:HOVER{
+	color: 000;
+	background: #FFF;
+}
+
+#navigationPanel A.selected {
+    color: 000;
+    background: #F87431;
+}
+
+#navigationPanel A:HOVER .icon,#navigationPanel A.selected  .icon {
+	background-image: url("sprite_b.png");
+}
+
+#live_logs_tab .icon {
+	background-position: 0px 0px;
+}
+
+#live_kpis_tab .icon {
+	background-position: 0px -30px;
+}
+
+#archive_tab .icon {
+    background-position: 0px -90px;
+}
+
+#search_tab .icon {
+    background-position: 0px -60px;
+}
+
+#workspacePanel {
+	float: left;
+	padding: 2px;
+}
+
+#filterContainer {
+	width: 100%;
+	padding-top: 2px;
+	height: 38px;
+	margin: 0px;
+	border-bottom: 1px solid #CCC;
+}
+
+#filterButtons {
+	display: block;
+	height: 35px;
+	float: left;
+	width: 120px;
+	margin-right: 20px;
+}
+
+#filterButtons SELECT,#optionButtons SELECT {
+	border: 1px solid #ccc;
+	vertical-align: top;
+	height: 33px;
+	width: 120px;
+	font-size: 18px;
+}
+
+#filterContainer INPUT {
+	height: 33px;
+	width: 400px;
+	padding: 4px 20px 4px 4px;
+	font-size: 19px;
+	display: block;
+	float: left;
+    border: 1px solid #CCC;
+}
+
+#optionButtons {
+	display: block;
+	height: 35px;
+	float: left;
+	width: 120px;
+	margin-left: 20px;
+}
+
+#logScrollContainer,#logSearchScrollContainer {
+	width: 100%;
+	overflow: auto;
+	position: relative;
+}
+
+#logContainer,#logSearchContainer {
+	width: 100%;
+	margin-top: 10px;
+	margin-bottom: 50px;
+	position: relative;
+}
+
+.log {
+	padding: 1px 5px;
+	color: white;
+}
+
+.log.DEBUG {
+	color: #000;
+}
+
+.log.INFO {
+	color: green;
+}
+
+.log.WARN {
+	color: #FF8000;
+}
+
+.log.SEVERE,.log.ERROR {
+	color: red;
+}
+
+.chart_container {
+	position: relative;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.chart {
+	position: relative;
+	left: 40px;
+}
+
+.y_axis {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 40px;
+}
+
+
+
+
+
+/**************
+*** Search ****
+***************/
+
+#searchOptionsContainer  {
+    width: 100%;
+    padding-top: 2px;
+    height: 38px;
+    margin: 0px;
+    border-bottom: 1px solid #CCC;
+}
+
+
+#searchOptionsContainer INPUT[type="text"] {
+    height: 33px;
+    width: 400px;
+    padding: 4px 20px 4px 4px;
+    font-size: 19px;
+    display: block;
+    float: left;
+    border: 1px solid #CCC;
+}
+
+#logSearchContainer  .searchToken {
+	background-color: #F87431;
+}
+#logSearchContainer .loading {
+	width: 32px;
+	height: 32px;
+	margin:10px auto;
+	background-image: url("loading.gif");
+}
+
+
+

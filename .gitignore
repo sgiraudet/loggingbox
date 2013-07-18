@@ -5,4 +5,7 @@
 loggingbox-server/data/
 loggingbox-server/war/WEB-INF/lib/
 *.war
+*.pyc
 start/data
+*.project
+*.pydevproject
