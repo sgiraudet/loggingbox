@@ -5,7 +5,7 @@ formatters = [];
 var config = {
 	formatters : []
 }
-var socket = io.connect('http://localhost');
+var socket = io.connect(window.location.origin);
 socket.on('event.log.new', function (log) {
    console.log('New log data'+log);
    insertLog(log);
