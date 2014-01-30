@@ -6,25 +6,29 @@ var config = {
 	formatters : []
 }
 var socket = io.connect(window.location.origin);
+//register to some default events
 socket.on('event.log.new', function (log) {
    console.log('New log data'+log);
    insertLog(log);
  });
  
-
+ //start by loading all default data.
+ //load formatters
  socket.emit('action.formatter.get', {}, function(formatters) {
  	console.log('Formatters received'+formatters);
- 	for(var i = 0; i < formatters.length; i++) {
-		config.formatters = formatters;
- 	}
+	config.formatters = formatters;
+ 		
+	//load all logs
+	socket.emit('action.log.get', { 'field': 'data' }, function(data) {
+		console.log('data received'+data);
+		for(var i = 0; i < data.length; i++) {
+	 		insertLog(data[i]);
+		}
+	});
+	
  });
 
-socket.emit('action.log.get', { 'field': 'data' }, function(data) {
-	console.log('data received'+data);
-	for(var i = 0; i < data.length; i++) {
- 		insertLog(data[i]);
-	}
-});
+
 
 
 
