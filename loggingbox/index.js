@@ -18,7 +18,7 @@ app.configure(function(){
 });
 app.use(express.static(__dirname + '/public')) 
 app.post('/api/log/push', pushLog);
-server.listen(1337);
+server.listen(80);
 
 
 
