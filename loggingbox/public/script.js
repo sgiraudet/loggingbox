@@ -1,32 +1,32 @@
-graphs = [];
-graphsData = [];
 
-formatters = [];
+
 var config = {
-	formatters : []
+	formatters : [],
+	charts : []
 }
-var socket = io.connect(window.location.origin);
-//register to some default events
-socket.on('event.log.new', function (log) {
-   console.log('New log data'+log);
-   insertLog(log);
- });
- 
- //start by loading all default data.
- //load formatters
- socket.emit('action.formatter.get', {}, function(formatters) {
- 	console.log('Formatters received'+formatters);
+
+registerLogNewEvent(null, insertLog);
+
+getFormatters(function(formatters) {
 	config.formatters = formatters;
  		
-	//load all logs
-	socket.emit('action.log.get', { 'field': 'data' }, function(data) {
+	getLogs({}, function(data) {
 		console.log('data received'+data);
 		for(var i = 0; i < data.length; i++) {
 	 		insertLog(data[i]);
 		}
 	});
-	
  });
+ 
+
+getCharts(function(charts){
+	if(typeof charts === 'array'){
+ 		config.charts = charts;
+	} else {
+		config.charts = new Array(charts);
+	}
+	refreshCharts();
+});
 
 
 
@@ -130,22 +130,12 @@ function selectFormatter(log) {
 	for(var i = 0; i < config.formatters.length; i++) {
 		var formatter = config.formatters[i];
 		if(formatter.filter) {
-			var keys = Object.keys(formatter.filter);
-			for(var j = 0; j < keys.length; j++) {
-				key = keys[j];
-				value = formatter.filter[key];
-				var paths = key.split('.');
-				var currentLogPath = log;
-				for(var k = 0; k < paths.length; k++) {
-					if(!currentLogPath[paths[k]]) {
-						return null;
-					}
-					currentLogPath = currentLogPath[paths[k]];
-				}
+			if($.matchFilter(formatter.filter, log)) {
+				return formatter;
 			}
 		}
-		return formatter;	
 	}
+	return null;
 }
 function applyFormatter(formatter, log) {
 	var html = formatter.output;
@@ -187,130 +177,43 @@ function applyFormatter(formatter, log) {
 	return html;	
 }
 
- 
-var server = {
-	connect : function() {
+
+function refreshCharts() {
+	$('#live_kpis').html('');
+	
+	for(var i = 0; i < config.charts.length; i++) {
+		var chart = config.charts[i];
 		
-		var location = '';
-		if(window.location.protocol == 'https:') {
-			location +=  'wss://';
-		} else {
-			location +=  'ws://';
-		}
-		location += window.location.hostname;
-		if(window.location.port && window.location.port != '80') {
-			location += ':'+window.location.port;
-		}
-		location += '/api/log/get?appId=';
-		location += extractUrlParams()['appId'];
-		
-		this._ws = new WebSocket(location);
-		this._ws.onopen = this._onopen;
-		this._ws.onmessage = this._onmessage;
-		this._ws.onclose = this._onclose;
-	},
-
-	_onopen : function() {
-		
-	},
-
-	_send : function(message) {
-		if (this._ws)
-			this._ws.send(message);
-	},
-
-	send : function(text) {
-		if (text != null && text.length > 0)
-			server._send(text);
-	},
-
-	_onmessage : function(m) {
-
-		if (m.data) {
-			var jsonObject = eval('(' + m.data + ')');
-			if (jsonObject.objectType == 'com.log.model.KpiDefinition') {
-				createKpiChart(jsonObject);
-			}else if (jsonObject.objectType == 'com.log.model.Log') {
-				var isBottom = $('#logScrollContainer').scrollTop() >= $(
-						'#logContainer').height()
-						- $('#logScrollContainer').height();
-
-				var logContainer = document.getElementById('logContainer');
-				var divData = buildLogDiv(jsonObject);
-				logContainer.appendChild(divData);
-				
-				var bufferSize = $('#bufferSizeSelect option:selected').val();  
-				if(logContainer.childNodes.length > bufferSize) {
-					logContainer.removeChild(logContainer.firstChild);
-				} 
-
-				
-				if(showLog($(divData))) {
-					$(divData).show();
-				}else {
-					$(divData).hide();
-				}
-				if (isBottom) {
-					$('#logScrollContainer').scrollTop(
-							$('#logContainer').height());
-				}
-			} else if (jsonObject.objectType == 'com.log.model.Kpi') {
-				
-
-				graphsData[jsonObject.kpiDefinitionId].push( {
-						x : jsonObject.date,
-						y : jsonObject.value
-					});
-				if(graphsData[jsonObject.kpiDefinitionId].length > 300) {
-					graphsData[jsonObject.kpiDefinitionId].shift();
-				}
-				if (typeof graphs[jsonObject.kpiDefinitionId] === 'undefined') {
-					graphs[jsonObject.kpiDefinitionId] = new Rickshaw.Graph({
-						element : document.querySelector('#div'+jsonObject.kpiDefinitionId+'Chart'),
-						width : 580,
-						height : 250,
-						series : [ {
-							color : 'steelblue',
-							data : graphsData[jsonObject.kpiDefinitionId]
-						} ]
-					});
-
-					var axes = new Rickshaw.Graph.Axis.Time( { graph: graphs[jsonObject.kpiDefinitionId] } );
-
-					var y_axis = new Rickshaw.Graph.Axis.Y( {
-					        graph: graphs[jsonObject.kpiDefinitionId],
-					        orientation: 'left',
-					        tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
-					        element: document.getElementById('div'+jsonObject.kpiDefinitionId+'Chart_y_axis'),
-					} );
-					
-					graphs[jsonObject.kpiDefinitionId].render();
-				}else {
-					graphs[jsonObject.kpiDefinitionId].update();
-				}
-			} else if (jsonObject.objectType == 'com.log.model.result.SearchResult') {
-				search.onSearchResult(jsonObject);
-			} else if (jsonObject.objectType == 'com.log.model.result.GetLogsResult') {
-				search.onGetLogsResult(jsonObject);
-			} 
-		}
-	},
-
-	_onclose : function(m) {
-		this._ws = null;
+		// Set attributes as a second parameter
+		$('<iframe />', {
+		    name: chart.name,
+		    id:   chart._id,
+		    src : '/chart/?id='+chart._id
+		}).appendTo('#live_kpis');
 	}
-};
-
-function createKpiChart(kpiDefinition) {
-	var kpiChartDiv = document.createElement('div');
-	$(kpiChartDiv).html( '<div>'+kpiDefinition.name+'</div><div class="chart_container">'+
-			'<div class="y_axis" id="div'+kpiDefinition.id+'Chart_y_axis"></div>'+
-			'<div class="chart"  id="div'+kpiDefinition.id+'Chart"></div></div>');
 	
-	$('#live_kpis').append(kpiChartDiv);
-	
-	graphsData[kpiDefinition.id] = new Array();
 }
+
+ // 
+// var server = {
+// 	
+// 	_onmessage : function(m) {
+// 
+// 		if (m.data) {
+// 			var jsonObject = eval('(' + m.data + ')');
+// 			if (jsonObject.objectType == 'com.log.model.result.SearchResult') {
+// 				search.onSearchResult(jsonObject);
+// 			} else if (jsonObject.objectType == 'com.log.model.result.GetLogsResult') {
+// 				search.onGetLogsResult(jsonObject);
+// 			} 
+// 		}
+// 	},
+// 
+// 	_onclose : function(m) {
+// 		this._ws = null;
+// 	}
+// };
+
 
 function refreshFilter() {
 	$('.log').each(function() {
@@ -612,16 +515,4 @@ var search =  {
 	
 	
 };
-
-
-/*
- * jQuery hashchange event - v1.3 - 7/21/2010
- * http://benalman.com/projects/jquery-hashchange-plugin/
- * 
- * Copyright (c) 2010 "Cowboy" Ben Alman
- * Dual licensed under the MIT and GPL licenses.
- * http://benalman.com/about/license/
- */
-(function($,e,b){var c="hashchange",h=document,f,g=$.event.special,i=h.documentMode,d="on"+c in e&&(i===b||i>7);function a(j){j=j||location.href;return"#"+j.replace(/^[^#]*#?(.*)$/,"$1")}$.fn[c]=function(j){return j?this.bind(c,j):this.trigger(c)};$.fn[c].delay=50;g[c]=$.extend(g[c],{setup:function(){if(d){return false}$(f.start)},teardown:function(){if(d){return false}$(f.stop)}});f=(function(){var j={},p,m=a(),k=function(q){return q},l=k,o=k;j.start=function(){p||n()};j.stop=function(){p&&clearTimeout(p);p=b};function n(){var r=a(),q=o(m);if(r!==m){l(m=r,q);$(e).trigger(c)}else{if(q!==m){location.href=location.href.replace(/#.*/,"")+q}}p=setTimeout(n,$.fn[c].delay)}$.browser.msie&&!d&&(function(){var q,r;j.start=function(){if(!q){r=$.fn[c].src;r=r&&r+a();q=$('<iframe tabindex="-1" title="empty"/>').hide().one("load",function(){r||l(a());n()}).attr("src",r||"javascript:0").insertAfter("body")[0].contentWindow;h.onpropertychange=function(){try{if(event.propertyName==="title"){q.document.title=h.title}}catch(s){}}}};j.stop=k;o=function(){return a(q.location.href)};l=function(v,s){var u=q.document,t=$.fn[c].domain;if(v!==s){u.title=h.title;u.open();t&&u.write('<script>document.domain="'+t+'"<\/script>');u.close();q.location.hash=v}}})();return j})()})(jQuery,this);
-
 

@@ -3,7 +3,7 @@
 <title>Logs</title>
 <LINK href="style.css" title="compact" rel="stylesheet" type="text/css">
 
-<LINK href="scripts/rickshaw.min.css" title="compact" rel="stylesheet"
+<LINK href="/scripts/rickshaw.min.css" title="compact" rel="stylesheet"
 	type="text/css">
 
 <script type="text/javascript"
@@ -14,6 +14,7 @@
 <script type="text/javascript" src="scripts/d3.min.js"></script>
 <script type="text/javascript" src="scripts/d3.layout.min.js"></script>
 <script type="text/javascript" src="scripts/rickshaw.min.js"></script>
+<script type="text/javascript" src="base.js"></script>
 <script type="text/javascript" src="script.js"></script>
 
 
@@ -116,8 +117,7 @@
 			$('#logScrollContainer').height($(window).height() - 42);
             $('#logSearchScrollContainer').height($(window).height() - 42);
 		}
-
-		//server.connect();
+        
 		selectTab();
 
 		$('#filter').keyup(function() {
