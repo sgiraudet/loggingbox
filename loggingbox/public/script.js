@@ -20,9 +20,9 @@ getFormatters(function(formatters) {
  
 
 getCharts(function(charts){
-	if(typeof charts === 'array'){
+	if(charts instanceof Array){
  		config.charts = charts;
-	} else {
+	} else if(charts){
 		config.charts = new Array(charts);
 	}
 	refreshCharts();
