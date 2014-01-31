@@ -95,7 +95,7 @@ io.sockets.on('connection', function (socket) {
     });
   	socket.on('action.chart.get', function (args, fn) {
     	console.log("action.chart.get");
-		if(args['_id']) {
+		if(args['_id'] && args['_id'] != undefined) {
 			args['_id'] =  new BSON.ObjectID(args['_id']);
 		}
 
