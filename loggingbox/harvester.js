@@ -4,15 +4,9 @@ var querystring = require('querystring');
 var http = require('http');
 var os = require("os");
 var nconf = require("nconf");
+var common = require('./common');
 
-
-nconf.argv().env();
-nconf.file({ file: 'config.json' });
-nconf.defaults({
-    'http': {
-        'port': 80
-    }
-});
+common.initConf();
 
 
 var args = process.argv.splice(2);

@@ -5,12 +5,14 @@ var express = require('express');
 var events = require('events');
 var mongo = require('mongodb');
 var nconf = require('nconf');
+var common = require('./common');
+
+
+
+
+common.initConf();
 
 var BSON = mongodb.BSONPure;
-
-
-
-
 var MongoClient = mongodb.MongoClient;
 var Server = mongodb.Server;
 
@@ -18,15 +20,6 @@ var app = express();
 var server = require('http').createServer(app);
 var io =  require('socket.io').listen(server);
 var eventEmitter = new events.EventEmitter();
-
-nconf.argv().env();
-nconf.file({ file: 'config.json' });
-nconf.defaults({
-    'http': {
-        'port': 80
-    }
-});
-
 
 
 app.configure(function(){
@@ -56,7 +49,8 @@ io.sockets.on('connection', function (socket) {
   	socket.on('action.log.get', function (filter, fn) {
     	console.log("action.log.get");
 
-	  	var mongoClient = new MongoClient(new Server('localhost', 27017));
+	  	var mongoClient = new MongoClient(new Server(nconf.get('mongo:server:host'), 
+			nconf.get('mongo:server:port')));
 	  	mongoClient.open(function(err, mongoClient) {
 			if(err) {
 				 console.log('Error:'+err.stack);
@@ -82,7 +76,8 @@ io.sockets.on('connection', function (socket) {
   	socket.on('action.formatter.get', function (args, fn) {
     	console.log("action.formatter.get");
 
-	  	var mongoClient = new MongoClient(new Server('localhost', 27017));
+	  	var mongoClient = new MongoClient(new Server(nconf.get('mongo:server:host'), 
+			nconf.get('mongo:server:port')));
 	  	mongoClient.open(function(err, mongoClient) {
 			if(err) {
 				 console.log('Error:'+err.stack);
@@ -110,7 +105,8 @@ io.sockets.on('connection', function (socket) {
 			args['_id'] =  new BSON.ObjectID(args['_id']);
 		}
 
-	  	var mongoClient = new MongoClient(new Server('localhost', 27017));
+	  	var mongoClient = new MongoClient(new Server(nconf.get('mongo:server:host'), 
+			nconf.get('mongo:server:port')));
 	  	mongoClient.open(function(err, mongoClient) {
 			if(err) {
 				 console.log('Error:'+err.stack);
@@ -161,7 +157,8 @@ function pushLog(req, res) {
   	var MongoClient = mongodb.MongoClient;
 	var Server = mongodb.Server;
 
-  	var mongoClient = new MongoClient(new Server('localhost', 27017));
+  	var mongoClient = new MongoClient(new Server(nconf.get('mongo:server:host'), 
+		nconf.get('mongo:server:port')));
   	mongoClient.open(function(err, mongoClient) {
 		if(err) {
 			 console.log('Error:'+err.stack);
