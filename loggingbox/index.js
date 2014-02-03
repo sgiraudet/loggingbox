@@ -4,6 +4,8 @@ var querystring = require('querystring');
 var express = require('express');
 var events = require('events');
 var mongo = require('mongodb');
+var nconf = require('nconf');
+
 var BSON = mongodb.BSONPure;
 
 
@@ -17,6 +19,15 @@ var server = require('http').createServer(app);
 var io =  require('socket.io').listen(server);
 var eventEmitter = new events.EventEmitter();
 
+nconf.argv().env();
+nconf.file({ file: 'config.json' });
+nconf.defaults({
+    'http': {
+        'port': 80
+    }
+});
+
+
 
 app.configure(function(){
   app.use(express.bodyParser());
@@ -24,7 +35,7 @@ app.configure(function(){
 app.use(express.static(__dirname + '/public')) 
 app.use('/chart', express.static(__dirname + '/chart')) 
 app.post('/api/log/push', pushLog);
-server.listen(80);
+server.listen(nconf.get('http:port'));
 
 
 
@@ -133,9 +144,19 @@ io.sockets.on('connection', function (socket) {
 
 function pushLog(req, res) {
 	var log = req.body;
-	log['_inserted'] = new Date().getTime() ;
-	
 	console.log("Push log"+log);
+	
+	
+	if(Array.isArray(log)) {
+		log = req.body;
+	}else {
+		log = new Array(log);
+	}	
+	for(var i = 0; i < log.length; i++) {
+		log[i]['_inserted'] = new Date().getTime() ;
+	}
+	
+	
 	 
   	var MongoClient = mongodb.MongoClient;
 	var Server = mongodb.Server;
@@ -150,15 +171,17 @@ function pushLog(req, res) {
 
 	    // Perform a simple insert into a collection
 		var collection = db1.collection("log");
+		
 		collection.insert(log, {}, function(err, item) {
 			db1.close();
-	    mongoClient.close();
-  	  	res.end();
-		
-
-		eventEmitter.emit('event.log.new', log);
-		
+	    	mongoClient.close();
+	  		res.end();
+	
 	    });
+		
+		for(var i = 0; i < log.length; i++) {
+			eventEmitter.emit('event.log.new', log[i]);
+		}
 	 
 	});
 }
